@@ -46,10 +46,14 @@ model User {
   email     String  @unique
   password  String
 
-  height    Decimal? @db.Decimal(10,2)
-  weight    Decimal? @db.Decimal(10,2)
+  tokenVersion Int    @default(0)
 
-  currency  Int     @default(0)
+  dateOfBirth   DateTime?
+  gender    Gender?
+  height    Decimal?  @db.Decimal(10,2)
+  weight    Decimal?  @db.Decimal(10,2)
+
+  currency  Int       @default(0)
 
   totalSteps          BigInt  @default(0)
   totalDistance       Decimal @db.Decimal(10,2) @default(0)

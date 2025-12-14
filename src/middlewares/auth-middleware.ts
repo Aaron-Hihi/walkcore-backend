@@ -2,8 +2,9 @@ import { NextFunction, Response } from "express"
 import { UserRequest } from "../models/user-request-model"
 import { ResponseError } from "../error/response-error"
 import { verifyToken } from "../utils/jwt-util"
+import { prismaClient } from "../utils/database-util"
 
-export const authMiddleware = (
+export const authMiddleware = async (
     req: UserRequest,
     res: Response,
     next: NextFunction
@@ -11,21 +12,33 @@ export const authMiddleware = (
     try {
         const authHeader = req.headers["authorization"]
         const token = authHeader && authHeader.split(" ")[1]
-
+        
         if (!token) {
-            next(new ResponseError(401, "Unauthorized user!"))
+            return next(new ResponseError(401, "Unauthorized user!"))
         }
 
         const payload = verifyToken(token!)
+        console.log("PAYLOAD:", payload)
 
-        if (payload) {
-            req.user = payload
-        } else {
-            next(new ResponseError(401, "Unauthorized user!"))
+        if (!payload) {
+            return next(new ResponseError(401, "Unauthorized user!"))
+        }
+        
+
+        const user = await prismaClient.user.findUnique({
+            where: { id: BigInt(payload.id) },
+            select: { tokenVersion: true }
+        })
+        console.log("DB TOKEN VERSION:", user?.tokenVersion)
+
+        if (!user || user.tokenVersion !== payload.tokenVersion) {
+            return next(new ResponseError(401, "Token expired"))
         }
 
+        req.user = payload
         next()
+
     } catch (error) {
-        next(error)
+        return next(error)
     }
 }
