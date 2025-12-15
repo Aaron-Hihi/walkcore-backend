@@ -18,7 +18,6 @@ export const authMiddleware = async (
         }
 
         const payload = verifyToken(token!)
-        console.log("PAYLOAD:", payload)
 
         if (!payload) {
             return next(new ResponseError(401, "Unauthorized user!"))
@@ -29,7 +28,6 @@ export const authMiddleware = async (
             where: { id: BigInt(payload.id) },
             select: { tokenVersion: true }
         })
-        console.log("DB TOKEN VERSION:", user?.tokenVersion)
 
         if (!user || user.tokenVersion !== payload.tokenVersion) {
             return next(new ResponseError(401, "Token expired"))

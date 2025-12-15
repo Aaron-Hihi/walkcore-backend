@@ -1,6 +1,7 @@
 import express from "express"
 import { authMiddleware } from "../middlewares/auth-middleware"
 import { UserController } from "../controllers/user-controller"
+import { FriendController } from "../controllers/friend-controller"
 
 export const privateRouter = express.Router()
 
@@ -20,16 +21,36 @@ privateRouter.patch("/users/me", UserController.updateMyProfile);
 // Logout from device (Update token version)
 privateRouter.patch("/users/logout", UserController.logout)
 
-// /* =========================
-// *  FRIEND SYSTEM
-// ========================= */
-// //TODO: Implement Friend System
-// // Search Friend
-// privateRouter.get("/users", UserController.searchUsers);
+/* =========================
+*  SOCIAL SYSTEM
+========================= */
+// TODO: Implement Search User
+privateRouter.get("/users", UserController.getAllUsers);
 
-// // Look at Friend's Profile
-// privateRouter.get("/users/:id/profile", UserController.getUserProfile);
+// Look at another user's Profile
+privateRouter.get("/users/:id", UserController.getUserProfile);
 
+// Add friend
+privateRouter.post("/friends/:userId", FriendController.sendRequest);
+
+/*  Change status of a friend
+    - ONLY when user is addressee
+        -> PENDING to ACCEPTED
+    - All can change ACCEPTED to BLOCKED
+*/
+privateRouter.post("/friends/:requestId/accept", FriendController.acceptFriend);
+
+// Delete request ID when rejected
+privateRouter.post("/friends/:requestId/reject", FriendController.rejectFriend);
+
+// TODO: Implement Block System
+//privateRouter.post("/friends/:requestId/block", FriendController.blockFriend);
+
+// Get all friends
+privateRouter.get("/friends", FriendController.getFriendAll);
+
+// Get friend requests
+privateRouter.get("/friends/pending", FriendController.getFriendRequests);
 
 // /* =========================
 // *  HISTORY

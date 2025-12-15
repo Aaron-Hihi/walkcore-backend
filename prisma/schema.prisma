@@ -38,6 +38,12 @@ enum ParticipantStatus {
   FINISHED
 }
 
+enum FriendStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
 
 //* === Models ===
 model User {
@@ -70,6 +76,27 @@ model User {
   sessionsCreated Session[]
   participants     SessionParticipant[]
   dailyActivities  UserDailyActivity[]
+
+  sentFriendRequests     Friendship[] @relation("Requester")
+  receivedFriendRequests Friendship[] @relation("Addressee")
+}
+
+
+model Friendship {
+  id        Int   @id @default(autoincrement())
+
+  requesterId BigInt
+  addresseeId BigInt
+
+  friendStatus   FriendStatus
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  requester User @relation("Requester", fields: [requesterId], references: [id])
+  addressee User @relation("Addressee", fields: [addresseeId], references: [id])
+
+  @@unique([requesterId, addresseeId])
 }
 
 model UserDailyActivity {

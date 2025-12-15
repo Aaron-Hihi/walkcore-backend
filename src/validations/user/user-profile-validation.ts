@@ -9,6 +9,9 @@ export class UserProfileValidation {
             .positive({
                 error: "Height must be greater than 0!"
             })
+            .max(1000, { 
+                error: "Height value is too large." 
+            })
             .optional(),
         
         weight: z
@@ -17,6 +20,9 @@ export class UserProfileValidation {
             })
             .positive({
                 error: "Weight must be greater than 0!"
+            })
+            .max(1000, { 
+                error: "Weight value is too large." 
             })
             .optional(),
 
