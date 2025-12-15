@@ -2,6 +2,7 @@ import express from "express"
 import { authMiddleware } from "../middlewares/auth-middleware"
 import { UserController } from "../controllers/user-controller"
 import { FriendController } from "../controllers/friend-controller"
+import { ActivityController } from "../controllers/user-daily-activity-controller"
 
 export const privateRouter = express.Router()
 
@@ -52,18 +53,17 @@ privateRouter.get("/friends", FriendController.getFriendAll);
 // Get friend requests
 privateRouter.get("/friends/pending", FriendController.getFriendRequests);
 
-// /* =========================
-// *  HISTORY
-// ========================= */
-// // History for one day
-// privateRouter.get("/activities/day", ActivityController.getActivityDay);
+/* =========================
+*  HISTORY
+========================= */
+// History for one day
+privateRouter.get("/activities/day", ActivityController.getActivityOn);
+// GET /activities/daily?date=YYYY-MM-DD
 
-// // History based on range
-// privateRouter.get("/activities/day/range", ActivityController.getActivityDayRange);
-// /*
-//     GET /activities/daily?date=YYYY-MM-DD
-//     GET /activities/daily/range?from=YYYY-MM-DD&to=YYYY-MM-DD
-// */
+
+// History based on range
+privateRouter.get("/activities/day/range", ActivityController.getActivityOnRange);
+// GET /activities/daily/range?from=YYYY-MM-DD&to=YYYY-MM-DD
 
 
 // /* =========================
