@@ -1,6 +1,8 @@
 import express from "express"
 import { authMiddleware } from "../middlewares/auth-middleware"
 import { UserController } from "../controllers/user-controller"
+import { FriendController } from "../controllers/friend-controller"
+import { ActivityController } from "../controllers/user-daily-activity-controller"
 
 export const privateRouter = express.Router()
 
@@ -20,29 +22,48 @@ privateRouter.patch("/users/me", UserController.updateMyProfile);
 // Logout from device (Update token version)
 privateRouter.patch("/users/logout", UserController.logout)
 
-// /* =========================
-// *  FRIEND SYSTEM
-// ========================= */
-// //TODO: Implement Friend System
-// // Search Friend
-// privateRouter.get("/users", UserController.searchUsers);
+/* =========================
+*  SOCIAL SYSTEM
+========================= */
+// TODO: Implement Search User
+privateRouter.get("/users", UserController.getAllUsers);
 
-// // Look at Friend's Profile
-// privateRouter.get("/users/:id/profile", UserController.getUserProfile);
+// Look at another user's Profile
+privateRouter.get("/users/:id", UserController.getUserProfile);
+
+// Add friend
+privateRouter.post("/friends/:userId", FriendController.sendRequest);
+
+/*  Change status of a friend
+    - ONLY when user is addressee
+        -> PENDING to ACCEPTED
+    - All can change ACCEPTED to BLOCKED
+*/
+privateRouter.post("/friends/:requestId/accept", FriendController.acceptFriend);
+
+// Delete request ID when rejected
+privateRouter.post("/friends/:requestId/reject", FriendController.rejectFriend);
+
+// TODO: Implement Block System
+//privateRouter.post("/friends/:requestId/block", FriendController.blockFriend);
+
+// Get all friends
+privateRouter.get("/friends", FriendController.getFriendAll);
+
+// Get friend requests
+privateRouter.get("/friends/pending", FriendController.getFriendRequests);
+
+/* =========================
+*  HISTORY
+========================= */
+// History for one day
+privateRouter.get("/activities/day", ActivityController.getActivityOn);
+// GET /activities/daily?date=YYYY-MM-DD
 
 
-// /* =========================
-// *  HISTORY
-// ========================= */
-// // History for one day
-// privateRouter.get("/activities/day", ActivityController.getActivityDay);
-
-// // History based on range
-// privateRouter.get("/activities/day/range", ActivityController.getActivityDayRange);
-// /*
-//     GET /activities/daily?date=YYYY-MM-DD
-//     GET /activities/daily/range?from=YYYY-MM-DD&to=YYYY-MM-DD
-// */
+// History based on range
+privateRouter.get("/activities/day/range", ActivityController.getActivityOnRange);
+// GET /activities/daily/range?from=YYYY-MM-DD&to=YYYY-MM-DD
 
 
 // /* =========================
