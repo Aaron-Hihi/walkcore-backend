@@ -1,9 +1,10 @@
 import express from "express"
 import { authMiddleware } from "../middlewares/auth-middleware"
 import { UserController } from "../controllers/user-controller"
-import { FriendController } from "../controllers/friend-controller"
-import { ActivityController } from "../controllers/user-daily-activity-controller"
-
+import { UserItemController } from "../controllers/userItem-controller"
+import { ShopItemController } from "../controllers/shopItem-controller"
+import { UserAchievementController } from "../controllers/userAchievement-controller"
+import { AchievementController } from "../controllers/achievement-controller"
 export const privateRouter = express.Router()
 
 privateRouter.use(authMiddleware)
@@ -22,48 +23,29 @@ privateRouter.patch("/users/me", UserController.updateMyProfile);
 // Logout from device (Update token version)
 privateRouter.patch("/users/logout", UserController.logout)
 
-/* =========================
-*  SOCIAL SYSTEM
-========================= */
-// TODO: Implement Search User
-privateRouter.get("/users", UserController.getAllUsers);
+// /* =========================
+// *  FRIEND SYSTEM
+// ========================= */
+// //TODO: Implement Friend System
+// // Search Friend
+// privateRouter.get("/users", UserController.searchUsers);
 
-// Look at another user's Profile
-privateRouter.get("/users/:id", UserController.getUserProfile);
-
-// Add friend
-privateRouter.post("/friends/:userId", FriendController.sendRequest);
-
-/*  Change status of a friend
-    - ONLY when user is addressee
-        -> PENDING to ACCEPTED
-    - All can change ACCEPTED to BLOCKED
-*/
-privateRouter.post("/friends/:requestId/accept", FriendController.acceptFriend);
-
-// Delete request ID when rejected
-privateRouter.post("/friends/:requestId/reject", FriendController.rejectFriend);
-
-// TODO: Implement Block System
-//privateRouter.post("/friends/:requestId/block", FriendController.blockFriend);
-
-// Get all friends
-privateRouter.get("/friends", FriendController.getFriendAll);
-
-// Get friend requests
-privateRouter.get("/friends/pending", FriendController.getFriendRequests);
-
-/* =========================
-*  HISTORY
-========================= */
-// History for one day
-privateRouter.get("/activities/day", ActivityController.getActivityOn);
-// GET /activities/daily?date=YYYY-MM-DD
+// // Look at Friend's Profile
+// privateRouter.get("/users/:id/profile", UserController.getUserProfile);
 
 
-// History based on range
-privateRouter.get("/activities/day/range", ActivityController.getActivityOnRange);
-// GET /activities/daily/range?from=YYYY-MM-DD&to=YYYY-MM-DD
+// /* =========================
+// *  HISTORY
+// ========================= */
+// // History for one day
+// privateRouter.get("/activities/day", ActivityController.getActivityDay);
+
+// // History based on range
+// privateRouter.get("/activities/day/range", ActivityController.getActivityDayRange);
+// /*
+//     GET /activities/daily?date=YYYY-MM-DD
+//     GET /activities/daily/range?from=YYYY-MM-DD&to=YYYY-MM-DD
+// */
 
 
 // /* =========================
@@ -135,5 +117,33 @@ privateRouter.get("/activities/day/range", ActivityController.getActivityOnRange
 
 // // Active session, returns ONLY 1 session or null
 // privateRouter.get("/users/me/sessions/active", UserController.getMyActiveSession);
+
+// //* === USER ITEM ===
+privateRouter.get("/user_item", UserItemController.getAllUserItems);
+privateRouter.get("/user_item/:useritemListId", UserItemController.getUserItem);
+privateRouter.post("/user_item/:shopId", UserItemController.createUserItem);
+privateRouter.put("/user_item/:useritemListId", UserItemController.updateUserItem);
+privateRouter.delete("/user_item/:useritemListId", UserItemController.deleteUserItem);
+
+// //* === SHOP ITEM ===
+privateRouter.get("/shop-item", ShopItemController.getAllShopItems);
+privateRouter.get("/shop-item/:shopItemId", ShopItemController.getShopItem);
+privateRouter.post("/shop-item", ShopItemController.createShopItem);
+privateRouter.put("/shop-item/:shopItemId", ShopItemController.updateShopItem);
+privateRouter.delete("/shop-item/:shopItemId", ShopItemController.deleteShopItem);
+
+// //* === ACHIEVEMENT ===
+privateRouter.get("/achievement", AchievementController.getAllAchievements);
+privateRouter.get("/achievement/:achievementId", AchievementController.getAchievement);
+privateRouter.post("/achievement", AchievementController.createAchievement);
+privateRouter.put("/achievement/:achievementId", AchievementController.updateAchievement);
+privateRouter.delete("/achievement/:achievementId", AchievementController.deleteAchievement);
+
+// //* === USER ACHIEVEMENT ===
+privateRouter.get("/user_achievement", UserAchievementController.getAllUserAchievements);
+privateRouter.get("/user_achievement/:userAchievementListId", UserAchievementController.getUserAchievement);
+privateRouter.post("/user_achievement/:achievementId", UserAchievementController.createUserAchievement);
+privateRouter.put("/user_achievement/:userAchievementListId", UserAchievementController.updateUserAchievement);
+privateRouter.delete("/user_achievement/:userAchievementListId", UserAchievementController.deleteUserAchievement);
 
 
