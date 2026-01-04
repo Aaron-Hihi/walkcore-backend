@@ -39,7 +39,6 @@ export class UserController {
         try {
             const userId = BigInt(req.user!.id)
             await UserService.logout(userId)
-
             res.json({ message: "Logged out from all devices" })
         } catch (e) {
             next(e)
@@ -71,8 +70,7 @@ export class UserController {
         try {
             const userId = BigInt(req.user!.id)
             const data = await UserQueryService.updateMyProfile(userId, req.body)
-
-            res.json({ data: UserMapper.toProfile(data) })
+            res.json({ data })
         } catch (e) {
             next(e)
         }
@@ -102,33 +100,4 @@ export class UserController {
             next(e)
         }
     }
-
-    //* === OTHER USER ===
-    // Get all users
-    static async getAllUsers(req: UserRequest, res: Response, next: NextFunction) {
-        try {
-            const currentUserId = BigInt(req.user!.id)
-
-            const userProfiles = await UserQueryService.getAllUsers()
-
-            res.json({ data: UserMapper.toOtherProfiles(userProfiles) })
-        } catch (e) {
-            next(e)
-        }
-    }
-    
-    // Get user by ID
-    static async getUserProfile(req: UserRequest, res: Response, next: NextFunction) {
-        try {
-            const currentUserId = BigInt(req.user!.id)
-            const targetUserId = BigInt(req.params.id)
-
-            const userProfile = await UserQueryService.getUserProfile(currentUserId, targetUserId)
-
-            res.json({ data: UserMapper.toOtherProfile(userProfile) })
-        } catch (e) {
-            next(e)
-        }
-    }
-    
 }
