@@ -1,12 +1,13 @@
 import express from "express"
 import { authMiddleware } from "../middlewares/auth-middleware"
-import { UserController } from "../controllers/user-controller"
-import { FriendController } from "../controllers/friend-controller"
-import { UserItemController } from "../controllers/userItem-controller"
-import { ShopItemController } from "../controllers/shopItem-controller"
-import { UserAchievementController } from "../controllers/userAchievement-controller"
-import { AchievementController } from "../controllers/achievement-controller"
-import { ActivityController } from "../controllers/user-daily-activity-controller"
+import { UserController } from "../controllers/user/user-controller"
+import { FriendController } from "../controllers/user/friend-controller"
+import { UserItemController } from "../controllers/item/userItem-controller"
+import { ShopItemController } from "../controllers/item/shopItem-controller"
+import { UserAchievementController } from "../controllers/achievement/userAchievement-controller"
+import { AchievementController } from "../controllers/achievement/achievement-controller"
+import { ActivityController } from "../controllers/user/user-daily-activity-controller"
+import { SessionController } from "../controllers/session/session-controller"
 
 export const privateRouter = express.Router()
 
@@ -71,34 +72,34 @@ privateRouter.get("/activities/day/range", ActivityController.getActivityOnRange
 */
 
 
-// /* =========================
-// *  SESSION
-// ========================= */
+/* =========================
+*  SESSION
+========================= */
 
-// //* === SESSION EDITOR ===
-// // Create new session
-// privateRouter.post("/sessions", SessionController.createSession);
+//* === SESSION EDITOR ===
+// Create new session
+privateRouter.post("/sessions", SessionController.createSession);
 
-// /*  Get all sessions ONLY when:
-//     - visibility = PUBLIC
-//     - (is_friend(creator) && visibility = FRIEND_ONLY)
-// */
-// privateRouter.get("/sessions", SessionController.getSessions);
+/*  Get all sessions ONLY when:
+    - visibility = PUBLIC
+    - (is_friend(creator) && visibility = FRIEND_ONLY)
+*/
+privateRouter.get("/sessions", SessionController.getSessions);
 
-// /*  Valid ONLY when:
-//     - visibility = PUBLIC
-//     - (is_friend(creator) && visibility = FRIEND_ONLY)
-// */
-// privateRouter.get("/sessions/:sessionId", SessionController.getSessionDetail);
+/*  Valid ONLY when:
+    - visibility = PUBLIC
+    - (is_friend(creator) && visibility = FRIEND_ONLY)
+*/
+privateRouter.get("/sessions/:sessionId", SessionController.getSessionDetail);
 
-// /*  Edit session ONLY when:
-//     - status == PLANNED
-//         -> "status" = "CANCELLED"
-//         -> title, desc, time, image, data change
-//     - status == ONGOING 
-//         -> "status" = "FINISHED"
-// */
-// privateRouter.patch("/sessions/:sessionId", SessionController.updateSession);
+/*  Edit session ONLY when:
+    - status == PLANNED
+        -> "status" = "CANCELLED"
+        -> title, desc, time, image, data change
+    - status == ONGOING 
+        -> "status" = "FINISHED"
+*/
+privateRouter.patch("/sessions/:sessionId", SessionController.updateSession);
 
 
 // //* === SESSION PARTICIPATION ===

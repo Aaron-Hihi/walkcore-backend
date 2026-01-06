@@ -1,6 +1,6 @@
 import { ResponseError } from "../../error/response-error"
 import { prismaClient } from "../../utils/database-util"
-import { UpdateUserProfileRequest } from "../../models/user-model"
+import { UpdateUserProfileRequest } from "../../models/user/user-model"
 import { Validation } from "../../validations/validation"
 import { UserProfileValidation } from "../../validations/user/user-profile-validation"
 
