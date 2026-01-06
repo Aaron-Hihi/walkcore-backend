@@ -2,6 +2,10 @@ import express from "express"
 import { authMiddleware } from "../middlewares/auth-middleware"
 import { UserController } from "../controllers/user-controller"
 import { FriendController } from "../controllers/friend-controller"
+import { UserItemController } from "../controllers/userItem-controller"
+import { ShopItemController } from "../controllers/shopItem-controller"
+import { UserAchievementController } from "../controllers/userAchievement-controller"
+import { AchievementController } from "../controllers/achievement-controller"
 
 export const privateRouter = express.Router()
 
@@ -137,3 +141,37 @@ privateRouter.get("/friends/pending", FriendController.getFriendRequests);
 // privateRouter.get("/users/me/sessions/active", UserController.getMyActiveSession);
 
 
+/* =========================
+* ACHIEVEMENT DEFINITION (ADMIN/SYSTEM)
+========================= */
+privateRouter.get("/achievement", AchievementController.getAllAchievements);
+privateRouter.post("/achievement", AchievementController.createAchievement);
+privateRouter.put("/achievement/:achievementId", AchievementController.updateAchievement);
+privateRouter.delete("/achievement/:achievementId", AchievementController.deleteAchievement);
+
+/* =========================
+* USER ACHIEVEMENT PROGRESS
+========================= */
+privateRouter.get("/user_achievement", UserAchievementController.getAllUserAchievements);
+privateRouter.get("/user_achievement/:userAchievementListId", UserAchievementController.getUserAchievement);
+privateRouter.post("/user_achievement/:achievementId", UserAchievementController.createUserAchievement);
+privateRouter.put("/user_achievement/:userAchievementListId", UserAchievementController.updateUserAchievement);
+privateRouter.delete("/user_achievement/:userAchievementListId", UserAchievementController.deleteUserAchievement);
+
+/* =========================
+* SHOP ITEM MANAGEMENT
+========================= */
+privateRouter.get("/shop_item", ShopItemController.getAllShopItems);
+privateRouter.get("/shop_item/:shopItemId", ShopItemController.getShopItem);
+privateRouter.post("/shop_item", ShopItemController.createShopItem);
+privateRouter.put("/shop_item/:shopItemId", ShopItemController.updateShopItem);
+privateRouter.delete("/shop_item/:shopItemId", ShopItemController.deleteShopItem);
+
+/* =========================
+* USER INVENTORY (SHOP ITEMS)
+========================= */
+privateRouter.get("/user_item", UserItemController.getAllUserItems);
+privateRouter.get("/user_item/:userItemId", UserItemController.getUserItem);
+privateRouter.post("/user_item/:shopItemId", UserItemController.createUserItem);
+privateRouter.put("/user_item/:userItemId", UserItemController.updateUserItem);
+privateRouter.delete("/user_item/:userItemId", UserItemController.deleteUserItem);
