@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
@@ -8,7 +8,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//* === Enums ===
+/* =========================
+* ENUMS
+========================= */
 enum Gender {
   MALE
   FEMALE
@@ -44,54 +46,52 @@ enum FriendStatus {
   BLOCKED
 }
 
-
-//* === Models ===
+/* =========================
+* USER CORE MODEL
+========================= */
 model User {
-  id        BigInt  @id @default(autoincrement())
-  username  String  @unique
-  email     String  @unique
-  password  String
-
-  tokenVersion Int    @default(0)
-
-  dateOfBirth   DateTime?
-  gender    Gender?
-  height    Decimal?  @db.Decimal(10,2)
-  weight    Decimal?  @db.Decimal(10,2)
-
-  currency  Int       @default(0)
+  id           BigInt    @id @default(autoincrement())
+  username     String    @unique
+  email        String    @unique
+  password     String
+  tokenVersion Int       @default(0)
+  dateOfBirth  DateTime?
+  gender       Gender?
+  height       Decimal?  @db.Decimal(10, 2)
+  weight       Decimal?  @db.Decimal(10, 2)
+  currency     Int       @default(0)
 
   totalSteps          BigInt  @default(0)
-  totalDistance       Decimal @db.Decimal(10,2) @default(0)
+  totalDistance       Decimal @default(0) @db.Decimal(10, 2)
   totalActiveTime     Int     @default(0)
   totalSessionTime    Int     @default(0)
   totalSessionCount   Int     @default(0)
   totalCaloriesBurned Int     @default(0)
-
-  longestStreak Int @default(0)
+  longestStreak       Int     @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sessionsCreated Session[]
+  sessionsCreated  Session[]
   participants     SessionParticipant[]
   dailyActivities  UserDailyActivity[]
+  userAchievements UserAchievement[]
+  userItems        UserItem[]
 
   sentFriendRequests     Friendship[] @relation("Requester")
   receivedFriendRequests Friendship[] @relation("Addressee")
 }
 
-
+/* =========================
+* SOCIAL & FRIEND SYSTEM
+========================= */
 model Friendship {
-  id        Int   @id @default(autoincrement())
-
-  requesterId BigInt
-  addresseeId BigInt
-
-  friendStatus   FriendStatus
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int          @id @default(autoincrement())
+  requesterId  BigInt
+  addresseeId  BigInt
+  friendStatus FriendStatus
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   requester User @relation("Requester", fields: [requesterId], references: [id])
   addressee User @relation("Addressee", fields: [addresseeId], references: [id])
@@ -99,13 +99,15 @@ model Friendship {
   @@unique([requesterId, addresseeId])
 }
 
+/* =========================
+* ACTIVITY LOGGING
+========================= */
 model UserDailyActivity {
-  id        BigInt      @id @default(autoincrement())
-  userId    BigInt
-  date      DateTime    @db.Date
-
+  id             BigInt   @id @default(autoincrement())
+  userId         BigInt
+  date           DateTime @db.Date
   stepsWalked    Int
-  distance       Decimal  @db.Decimal(10,2)
+  distance       Decimal  @db.Decimal(10, 2)
   activeTime     Int
   sessionTime    Int
   sessionCount   Int
@@ -117,51 +119,94 @@ model UserDailyActivity {
   @@unique([userId, date])
 }
 
+/* =========================
+* SESSION SYSTEM
+========================= */
 model Session {
-  id              BigInt @id @default(autoincrement())
+  id              BigInt             @id @default(autoincrement())
   creatorId       BigInt
-
   title           String
   description     String?
-
   mode            SessionMode
-  status          SessionStatus   @default(PLANNED)
-  visibility      Visibility      @default(PUBLIC)
-
+  status          SessionStatus      @default(PLANNED)
+  visibility      Visibility         @default(PUBLIC)
   maxParticipants Int
   stepTarget      Int
-
-  startTime DateTime
-  endTime   DateTime
-
-  startLat  Decimal?  @db.Decimal(10,7)
-  startLong Decimal?  @db.Decimal(10,7)
+  startTime       DateTime
+  endTime         DateTime
+  startLat        Decimal?           @db.Decimal(10, 7)
+  startLong       Decimal?           @db.Decimal(10, 7)
 
   creator User @relation(fields: [creatorId], references: [id])
   participants SessionParticipant[]
 }
 
 model SessionParticipant {
-  id        BigInt @id @default(autoincrement())
-
-  sessionId BigInt
-  userId    BigInt
-
-  status    ParticipantStatus
-  isAdmin   Boolean @default(false)
-
-  stepTarget Int?
-  totalSteps Int?
-
-  joinTime  DateTime @default(now())
-  leaveTime DateTime?
-
-  currencyEarned  Int?
-  caloriesBurned  Int?
-  approxDistance Decimal? @db.Decimal(10,2)
+  id             BigInt            @id @default(autoincrement())
+  sessionId      BigInt
+  userId         BigInt
+  status         ParticipantStatus
+  isAdmin        Boolean           @default(false)
+  stepTarget     Int?
+  totalSteps     Int?
+  joinTime       DateTime          @default(now())
+  leaveTime      DateTime?
+  currencyEarned Int?
+  caloriesBurned Int?
+  approxDistance Decimal?          @db.Decimal(10, 2)
 
   session Session @relation(fields: [sessionId], references: [id])
   user    User    @relation(fields: [userId], references: [id])
 
   @@unique([sessionId, userId])
+}
+
+/* =========================
+* ACHIEVEMENT SYSTEM
+========================= */
+model Achievement {
+  id               Int               @id @default(autoincrement())
+  name             String
+  description      String
+  targetValue      Int
+  rewardCurrency   Int
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id            Int      @id @default(autoincrement())
+  userId        BigInt
+  achievementId Int
+  progress      Int      @default(0)
+  isCompleted   Boolean  @default(false)
+  completedAt   DateTime?
+
+  user        User        @relation(fields: [userId], references: [id])
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+
+  @@unique([userId, achievementId])
+}
+
+/* =========================
+* SHOP & INVENTORY SYSTEM
+========================= */
+model ShopItem {
+  id          Int        @id @default(autoincrement())
+  name        String
+  description String
+  price       Int
+  userItems   UserItem[]
+}
+
+model UserItem {
+  id         Int      @id @default(autoincrement())
+  userId     BigInt
+  shopItemId Int
+  quantity   Int      @default(1)
+  purchasedAt DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id])
+  shopItem ShopItem @relation(fields: [shopItemId], references: [id])
+
+  @@unique([userId, shopItemId])
 }

@@ -6,6 +6,7 @@ import { UserItemController } from "../controllers/userItem-controller"
 import { ShopItemController } from "../controllers/shopItem-controller"
 import { UserAchievementController } from "../controllers/userAchievement-controller"
 import { AchievementController } from "../controllers/achievement-controller"
+import { ActivityController } from "../controllers/user-daily-activity-controller"
 
 export const privateRouter = express.Router()
 
@@ -56,18 +57,18 @@ privateRouter.get("/friends", FriendController.getFriendAll);
 // Get friend requests
 privateRouter.get("/friends/pending", FriendController.getFriendRequests);
 
-// /* =========================
-// *  HISTORY
-// ========================= */
-// // History for one day
-// privateRouter.get("/activities/day", ActivityController.getActivityDay);
+/* =========================
+*  HISTORY
+========================= */
+// History for one day
+privateRouter.get("/activities/day", ActivityController.getActivityOn);
 
-// // History based on range
-// privateRouter.get("/activities/day/range", ActivityController.getActivityDayRange);
-// /*
-//     GET /activities/daily?date=YYYY-MM-DD
-//     GET /activities/daily/range?from=YYYY-MM-DD&to=YYYY-MM-DD
-// */
+// History based on range
+privateRouter.get("/activities/day/range", ActivityController.getActivityOnRange);
+/*
+    GET /activities/daily?date=YYYY-MM-DD
+    GET /activities/daily/range?from=YYYY-MM-DD&to=YYYY-MM-DD
+*/
 
 
 // /* =========================
