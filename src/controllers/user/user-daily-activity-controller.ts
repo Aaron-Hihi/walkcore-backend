@@ -16,8 +16,8 @@ export class ActivityController {
                 req.query
             );
 
-            //! If I have time I'll change this implementation
-            const targetDate: Date = validatedActivity.date as unknown as Date;
+            const targetDate = new Date(validatedActivity.date as string);
+            targetDate.setUTCHours(0, 0, 0, 0);
 
             const activity = await userDailyActivityService.getActivityOn(
                 currentUserId,
@@ -43,10 +43,12 @@ export class ActivityController {
                 req.query
             );
             
-            //! If I have time I'll change this implementation
-            const startDate: Date = validatedActivityRange.from as unknown as Date;
-            const endDate: Date = validatedActivityRange.to as unknown as Date;
+            const startDate = new Date(validatedActivityRange.from as string);
+            startDate.setUTCHours(0, 0, 0, 0);
             
+            const endDate = new Date(validatedActivityRange.to as string);
+            endDate.setUTCHours(23, 59, 59, 999);
+
             const activities = await userDailyActivityService.getActivitiesRange(
                 currentUserId,
                 startDate,
@@ -57,6 +59,28 @@ export class ActivityController {
 
         } catch (error) {
             next(error);
+        }
+    }
+
+    static async syncSteps(req: UserRequest, res: Response, next: NextFunction) {
+        try {
+            const steps = req.body.steps;
+            if (typeof steps !== 'number' || steps < 0) {
+                res.status(400).json({ errors: "Steps must be a positive number" });
+                return;
+            }
+
+            const result = await userDailyActivityService.syncSteps(req.user!, steps);
+            
+            res.status(200).json({
+                message: "Steps synchronized successfully",
+                data: {
+                    date: result.date,
+                    todayTotalSteps: result.stepsWalked
+                }
+            });
+        } catch (e) {
+            next(e);
         }
     }
 }

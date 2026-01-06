@@ -27,6 +27,7 @@ export interface UserResponse {
 }
 
 export interface UpdateUserProfileRequest {
+    username?: string;
     height?: number;
     weight?: number;
     dateOfBirth?: Date;

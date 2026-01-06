@@ -9,37 +9,47 @@ import { prismaClient } from "../../utils/database-util";
 import { ResponseError } from "../../error/response-error";
 import { UserAchievementValidation } from "../../validations/achievement/userAchievement-validation";
 import { Validation } from "../../validations/validation";
-import { UserAchievement } from "../../../generated/prisma";
+import { RequirementType, UserAchievement } from "../../../generated/prisma";
 
 /* =========================
 * USER ACHIEVEMENT SERVICE
 ========================= */
 export class UserAchievementService {
-    static async getAllUserAchievements(
-        user: UserJWTPayload
-    ): Promise<UserAchievementResponse[]> {
-        const userId = BigInt(user.id);
-
-        const userAchievements = await prismaClient.userAchievement.findMany({
-            where: {
-                userId: userId
-            },
+    static async getAllUserAchievements(user: UserJWTPayload): Promise<UserAchievementResponse[]> {
+        const data = await prismaClient.userAchievement.findMany({
+            where: { userId: BigInt(user.id) },
+            include: { achievement: true }
         });
 
-        return toUserAchievementResponseList(userAchievements);
+        return data.map(ua => ({
+            id: ua.id,
+            achievementId: ua.achievementId,
+            title: ua.achievement.title,
+            description: ua.achievement.description,
+            progress: ua.progress,
+            isCompleted: ua.isCompleted,
+            completedAt: ua.completedAt
+        }));
     }
 
-    static async getUserAchievement(
-        user: UserJWTPayload,
-        userAchievementListId: number,
-    ): Promise<UserAchievementResponse> {
-        const userId = BigInt(user.id);
+    static async getUserAchievement(user: UserJWTPayload, id: number): Promise<UserAchievementResponse> {
+        const ua = await prismaClient.userAchievement.findFirst({
+            where: { id: id, userId: BigInt(user.id) },
+            include: { achievement: true }
+        });
 
-        const userAchievement = await this.checkUserAchievementExists(userId, userAchievementListId);
+        if (!ua) throw new ResponseError(404, "Achievement record not found");
 
-        return toUserAchievementResponse(userAchievement);
+        return {
+            id: ua.id,
+            achievementId: ua.achievementId,
+            title: ua.achievement.title,
+            description: ua.achievement.description,
+            progress: ua.progress,
+            isCompleted: ua.isCompleted,
+            completedAt: ua.completedAt
+        };
     }
-
     static async createUserAchievement(
         user: UserJWTPayload,
         achievementId: number,
@@ -127,5 +137,26 @@ export class UserAchievementService {
         }
 
         return userAchievement;
+    }
+
+    static async checkAndUnlock(userId: bigint, type: RequirementType, currentValue: number): Promise<void> {
+        const potentialAchievements = await prismaClient.achievement.findMany({
+            where: {
+                requirementType: type,
+                requirementValue: { lte: currentValue },
+                userAchievements: {
+                    none: { userId }
+                }
+            }
+        });
+
+        if (potentialAchievements.length > 0) {
+            await prismaClient.userAchievement.createMany({
+                data: potentialAchievements.map(achievement => ({
+                    userId,
+                    achievementId: achievement.id
+                }))
+            });
+        }
     }
 }

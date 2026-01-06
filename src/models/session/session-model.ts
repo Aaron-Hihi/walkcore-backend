@@ -32,6 +32,19 @@ export interface CreateSessionRequest {
     startLong?: number;
 }
 
+export interface UpdateSessionRequest {
+    title?: string;
+    description?: string;
+    status?: "PLANNED" | "ONGOING" | "FINISHED" | "CANCELLED";
+    visibility?: "PUBLIC" | "FRIENDONLY" | "INVITEONLY";
+    maxParticipants: number;
+    stepTarget: number;
+    startTime: Date;
+    endTime: Date;
+    startLat?: number;
+    startLong?: number;
+}
+
 /* =========================
 * SESSION MAPPERS
 ========================= */

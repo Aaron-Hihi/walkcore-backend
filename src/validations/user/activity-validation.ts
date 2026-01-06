@@ -1,23 +1,24 @@
+/* =========================
+* ACTIVITY VALIDATION REVISION
+========================= */
 import { z, ZodType } from "zod";
 
 const dateStringSchema = z
     .string({
-        error: "Date field is required and must be a string."
+        message: "Date field must be a string."
     })
     .regex(/^\d{4}-\d{2}-\d{2}$/, {
-        error: "Date must be in YYYY-MM-DD format."
+        message: "Date must be in YYYY-MM-DD format."
     })
     .pipe(z.coerce.date({
         error: "Date provided is not a valid calendar date."
     }));
-
 
 export class ActivityValidation {
     static readonly GET_SINGLE_DATE: ZodType = z.object({
         date: dateStringSchema
             .describe("The target date for activity lookup (YYYY-MM-DD).")
     });
-
 
     static readonly GET_DATE_RANGE: ZodType = z.object({
         from: dateStringSchema
@@ -27,9 +28,11 @@ export class ActivityValidation {
             .describe("The end date of the activity range (YYYY-MM-DD)."),
     })
     .refine(
-        (data) => data.from <= data.to,
+        (data) => {
+            return data.from.getTime() <= data.to.getTime();
+        },
         {
-            error: "Start date ('from') cannot be after end date ('to').",
+            message: "Start date ('from') cannot be after end date ('to').",
             path: ["from"],
         }
     );

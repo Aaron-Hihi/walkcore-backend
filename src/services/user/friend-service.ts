@@ -1,111 +1,100 @@
+import { Friendship, FriendStatus, NotificationType } from "../../../generated/prisma";
 import { ResponseError } from "../../error/response-error"
 import { FriendRequestResponse, FriendResponse, toFriendRequestResponse, toFriendResponse } from "../../models/user/friend-model"
 import { prismaClient } from "../../utils/database-util"
 import { Validation } from "../../validations/validation"
+import { NotificationService } from "../notification/notification-service";
 
 export class friendService {
+    static async searchUsers(userId: bigint, query: string): Promise<any[]> {
+        return await prismaClient.user.findMany({
+            where: {
+                username: { contains: query, mode: "insensitive" },
+                NOT: { id: userId },
+                receivedFriendRequests: {
+                    none: {
+                        requesterId: userId,
+                        friendStatus: FriendStatus.BLOCKED
+                    }
+                },
+                sentFriendRequests: {
+                    none: {
+                        addresseeId: userId,
+                        friendStatus: FriendStatus.BLOCKED
+                    }
+                }
+            },
+            select: {
+                id: true,
+                username: true,
+                totalSteps: true
+            }
+        });
+    }
 
     // Send friend request
-    static async sendRequest(
-        requesterId: bigint,
-        addresseeId: bigint
-    ): Promise<string> {
+    static async sendRequest(requesterId: bigint, addresseeId: bigint): Promise<Friendship> {
+        if (requesterId === addresseeId) throw new ResponseError(400, "Cannot add yourself");
 
-        // Check if requester adds themselves
-        if (requesterId === addresseeId) {
-            throw new ResponseError(400, "Cannot add yourself")
-        }
-
-        // Check if requester adds themselves
-        const target = await prismaClient.user.findUnique({
-            where: { id: addresseeId },
-            select: { id: true }
-        })
-
-        if (!target) {
-            throw new ResponseError(404, "Target user not found") 
-        }
-
-        // Logic if request is already made
         const existing = await prismaClient.friendship.findFirst({
             where: {
                 OR: [
-                    {
-                        requesterId,
-                        addresseeId
-                    },
-                    {
-                        requesterId: addresseeId,
-                        addresseeId: requesterId
-                    }
+                    { requesterId, addresseeId },
+                    { requesterId: addresseeId, addresseeId: requesterId }
                 ]
             }
-        })
+        });
 
-        if (existing) {
-            switch (existing.friendStatus) {
-                case "PENDING":
-                    if (existing.addresseeId === requesterId) {
-                        throw new ResponseError(400, "You already have a pending request from this user. Please accept it.")
-                    } else {
-                        throw new ResponseError(400, "Friend request already pending")
-                    }
+        if (existing) throw new ResponseError(400, "Relationship already exists or is pending");
 
-                case "ACCEPTED":
-                    throw new ResponseError(400, "You are already friends")
-
-                case "BLOCKED":
-                    throw new ResponseError(403, "You cannot send request to this user")
-
-            default:
-                throw new ResponseError(400, "Invalid friendship state")
-            }
-        }
-
-        // Create friend request
-        await prismaClient.friendship.create({
+        const newFriendship = await prismaClient.friendship.create({
             data: {
-            requesterId,
-            addresseeId,
-            friendStatus: "PENDING"
-            }
-        })
+                requesterId,
+                addresseeId,
+                friendStatus: FriendStatus.PENDING
+            },
+            include: { requester: true }
+        });
 
-        return "Friend request sent"
+        await NotificationService.create(
+            addresseeId,
+            "Permintaan Pertemanan",
+            `${newFriendship.requester.username} ingin berteman denganmu.`,
+            NotificationType.FRIEND_REQUEST
+        );
+
+        return newFriendship;
     }
 
 
     // To accept friend request
-    static async acceptRequest(
-        requestId: bigint,
-        currentUserId: bigint
-    ): Promise<string> {
-        const friendship = await prismaClient.friendship.findUnique({
-        where: { id: Number(requestId) }
-        })
+    static async acceptRequest(userId: bigint, requestId: number): Promise<Friendship> {
+        const request = await prismaClient.friendship.findUnique({
+            where: { id: requestId },
+            include: { addressee: true }
+        });
 
-        // Check if request is found
-        if (!friendship) {
-            throw new ResponseError(404, "Friend request not found")
+        if (!request || request.addresseeId !== userId) {
+            throw new ResponseError(404, "Friend request not found");
         }
 
-        // Check if user is addressee
-        if (friendship.addresseeId !== currentUserId) {
-            throw new ResponseError(403, "You are not allowed to accept this request")
+        if (request.friendStatus !== FriendStatus.PENDING) {
+            throw new ResponseError(400, `Cannot accept request with status ${request.friendStatus}`);
         }
 
-        // State validation
-        if (friendship.friendStatus !== "PENDING") {
-            throw new ResponseError(400, `Cannot accept request with status ${friendship.friendStatus}`)
-        }
+        const updatedFriendship = await prismaClient.friendship.update({
+            where: { id: requestId },
+            data: { friendStatus: FriendStatus.ACCEPTED }
+        });
 
-        // Update friend status to ACCEPTED
-        await prismaClient.friendship.update({
-            where: { id: Number(requestId) },
-            data: { friendStatus: "ACCEPTED" }
-        })
+        await NotificationService.create(
+            request.requesterId,
+            "Friend accepted",
+            `${request.addressee.username} happy to be friends with you!.`,
+            NotificationType.FRIEND_ACCEPTED
+        );
 
-        return "Friend request accepted"
+        return updatedFriendship;
     }
 
 
@@ -161,6 +150,23 @@ export class friendService {
         })
 
         return pendingRequests.map(toFriendRequestResponse) 
+    }
+
+    static async blockUser(userId: bigint, targetUserId: bigint): Promise<Friendship> {
+        return await prismaClient.friendship.upsert({
+            where: {
+                requesterId_addresseeId: {
+                    requesterId: userId,
+                    addresseeId: targetUserId
+                }
+            },
+            update: { friendStatus: FriendStatus.BLOCKED },
+            create: {
+                requesterId: userId,
+                addresseeId: targetUserId,
+                friendStatus: FriendStatus.BLOCKED
+            }
+        });
     }
 
 

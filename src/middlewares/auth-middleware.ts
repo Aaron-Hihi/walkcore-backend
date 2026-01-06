@@ -37,6 +37,6 @@ export const authMiddleware = async (
         next()
 
     } catch (error) {
-        return next(error)
+        return next(new ResponseError(401, "Invalid or expired token"));
     }
 }

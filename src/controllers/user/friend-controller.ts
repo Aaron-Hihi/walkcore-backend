@@ -4,31 +4,39 @@ import { UserRequest } from "../../models/user/user-request-model";
 
 export class FriendController {
 
+    static async search(req: UserRequest, res: Response, next: NextFunction) {
+        try {
+            const query = req.query.q as string;
+            const userId = BigInt(req.user!.id);
+            const result = await friendService.searchUsers(userId, query);
+            res.status(200).json({ data: result });
+        } catch (e) {
+            next(e);
+        }
+    }
+
     //* === FRIEND REQUEST ===
     // Send friend request
     static async sendRequest(req: UserRequest, res: Response, next: NextFunction) {
         try {
             const requesterId = BigInt(req.user!.id);
-            console.log("RequesterID: " + requesterId)
             const addresseeId = BigInt(req.params.userId);
-
-            const message = await friendService.sendRequest(requesterId, addresseeId);
-            res.status(201).json({ message });
-        } catch (err) {
-            next(err);
+            const result = await friendService.sendRequest(requesterId, addresseeId);
+            res.status(201).json({ data: result });
+        } catch (e) {
+            next(e);
         }
     }
 
     // Accept friend request
     static async acceptFriend(req: UserRequest, res: Response, next: NextFunction) {
         try {
-            const currentUserId = BigInt(req.user!.id);
-            const requestId = BigInt(req.params.requestId);
-
-            const message = await friendService.acceptRequest(requestId, currentUserId);
-            res.status(200).json({ message });
-        } catch (err) {
-            next(err);
+            const userId = BigInt(req.user!.id);
+            const requestId = Number(req.params.requestId);
+            const result = await friendService.acceptRequest(userId, requestId);
+            res.status(200).json({ data: result });
+        } catch (e) {
+            next(e);
         }
     }
 
@@ -78,6 +86,18 @@ export class FriendController {
             res.status(200).json({ pendingRequests });
         } catch (err) {
             next(err);
+        }
+    }
+
+    // Block a friend
+    static async blockFriend(req: UserRequest, res: Response, next: NextFunction) {
+        try {
+            const userId = BigInt(req.user!.id);
+            const targetUserId = BigInt(req.params.userId);
+            const result = await friendService.blockUser(userId, targetUserId);
+            res.status(200).json({ data: result });
+        } catch (e) {
+            next(e);
         }
     }
 }

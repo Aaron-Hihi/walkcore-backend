@@ -1,4 +1,4 @@
-import { Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { UserRequest } from "../../models/user/user-request-model";
 import { Validation } from "../../validations/validation";
 import { SessionValidation } from "../../validations/session/session-validation";
@@ -51,6 +51,22 @@ export class SessionController {
             res.status(200).json({ data: response });
         } catch (error) {
             next(error);
+        }
+    }
+
+    /* =========================
+    * SESSION COMPLETION
+    ========================= */
+    static async finishSession(req: Request, res: Response, next: NextFunction) {
+        try {
+            const sessionId = BigInt(req.params.sessionId);
+            const result = await SessionService.finishSessionAndDistributeRewards(sessionId);
+
+            res.status(200).json({
+                message: result
+            });
+        } catch (e) {
+            next(e);
         }
     }
 }

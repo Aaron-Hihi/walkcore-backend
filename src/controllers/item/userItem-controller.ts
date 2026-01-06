@@ -107,4 +107,36 @@ export class UserItemController {
       next(error);
     }
   }
+
+  static async purchase(req: UserRequest, res: Response, next: NextFunction) {
+        try {
+            const userId = BigInt(req.user!.id);
+            const shopItemId = Number(req.params.shopItemId);
+            const message = await UserItemService.buyItem(userId, shopItemId);
+            res.status(200).json({ data: message });
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    static async getInventory(req: UserRequest, res: Response, next: NextFunction) {
+        try {
+            const userId = BigInt(req.user!.id);
+            const result = await UserItemService.getMyInventory(userId);
+            res.status(200).json({ data: result });
+        } catch (e) {
+            next(e);
+        }
+    }
+
+    static async equip(req: UserRequest, res: Response, next: NextFunction) {
+        try {
+            const userId = BigInt(req.user!.id);
+            const userItemId = Number(req.params.userItemId);
+            const message = await UserItemService.toggleEquip(userId, userItemId);
+            res.status(200).json({ data: message });
+        } catch (e) {
+            next(e);
+        }
+    }
 }

@@ -1,4 +1,4 @@
-import { UserItem } from '../../../generated/prisma/client'
+import { ShopItem, UserItem } from '../../../generated/prisma/client'
 export interface UserItemResponse {
     id: number;
     acquiredAt: Date;
@@ -24,8 +24,30 @@ export function toUserItemResponse(prismaUserItem : UserItem): UserItemResponse 
         }
 }
 
+export function toInventoryResponse(item: UserItem & { shopItem: ShopItem }): InventoryResponse {
+    return {
+        id: item.id,
+        name: item.shopItem.name,
+        itemType: item.shopItem.itemType,
+        imageUrl: item.shopItem.imageUrl,
+        isEquipped: item.isEquipped
+    };
+}
+
+
 export interface UserItemCreateUpdateRequest {
     acquiredAt: Date;
     isEquipped: boolean;
 }
 
+export interface BuyItemRequest {
+    shopItemId: number;
+}
+
+export interface InventoryResponse {
+    id: number;
+    name: string;
+    itemType: string;
+    imageUrl: string | null;
+    isEquipped: boolean;
+}
