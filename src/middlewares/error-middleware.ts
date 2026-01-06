@@ -8,14 +8,14 @@ export const errorMiddleware = async (
     res: Response,
     next: NextFunction
 ) => {
-    if (error instanceof ZodError) {
-        res.status(400).json({
-            error: error.message,
-        })
-    } else if (error instanceof ResponseError) {
+    if (error instanceof ResponseError) {
         res.status(error.status).json({
             error: error.message,
-        })
+        }) 
+    } else if (error instanceof ZodError) {
+    res.status(400).json({
+        error: error.message,
+    })
     } else {
         res.status(500).json({
             error: error.message,

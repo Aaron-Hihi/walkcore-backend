@@ -1,12 +1,15 @@
 import express from "express"
 import { authMiddleware } from "../middlewares/auth-middleware"
-import { UserController } from "../controllers/user-controller"
-import { FriendController } from "../controllers/friend-controller"
-import { UserItemController } from "../controllers/userItem-controller"
-import { ShopItemController } from "../controllers/shopItem-controller"
-import { UserAchievementController } from "../controllers/userAchievement-controller"
-import { AchievementController } from "../controllers/achievement-controller"
-import { ActivityController } from "../controllers/user-daily-activity-controller"
+import { UserController } from "../controllers/user/user-controller"
+import { FriendController } from "../controllers/user/friend-controller"
+import { UserItemController } from "../controllers/item/userItem-controller"
+import { ShopItemController } from "../controllers/item/shopItem-controller"
+import { UserAchievementController } from "../controllers/achievement/userAchievement-controller"
+import { AchievementController } from "../controllers/achievement/achievement-controller"
+import { ActivityController } from "../controllers/user/user-daily-activity-controller"
+import { SessionController } from "../controllers/session/session-controller"
+import { ParticipantController } from "../controllers/session/participant-controller"
+import { LeaderboardController } from "../controllers/session/leaderboard-controller"
 
 export const privateRouter = express.Router()
 
@@ -29,7 +32,10 @@ privateRouter.patch("/users/logout", UserController.logout)
 /* =========================
 *  SOCIAL SYSTEM
 ========================= */
-// TODO: Implement Search User
+// Search user
+privateRouter.get("/users/search", FriendController.search);
+
+// Get all users
 privateRouter.get("/users", UserController.getAllUsers);
 
 // Look at another user's Profile
@@ -48,14 +54,23 @@ privateRouter.post("/friends/:requestId/accept", FriendController.acceptFriend);
 // Delete request ID when rejected
 privateRouter.post("/friends/:requestId/reject", FriendController.rejectFriend);
 
-// TODO: Implement Block System
-//privateRouter.post("/friends/:requestId/block", FriendController.blockFriend);
+// Block System
+privateRouter.post("/friends/:requestId/block", FriendController.blockFriend);
 
 // Get all friends
 privateRouter.get("/friends", FriendController.getFriendAll);
 
 // Get friend requests
 privateRouter.get("/friends/pending", FriendController.getFriendRequests);
+
+
+/* =========================
+*  NOTIFICATION SYSTEM
+========================= */
+// Get notifications (Friend requests, session invites, achievement earned)
+// privateRouter.get("/notifications", NotificationController.getNotifications);
+// privateRouter.patch("/notifications/:id/read", NotificationController.markAsRead);
+
 
 /* =========================
 *  HISTORY
@@ -71,93 +86,106 @@ privateRouter.get("/activities/day/range", ActivityController.getActivityOnRange
 */
 
 
-// /* =========================
-// *  SESSION
-// ========================= */
+/* =========================
+*  SYNC & REWARDS
+========================= */
+// Sync steps to daily activity
+privateRouter.post("/activities/sync", ActivityController.syncSteps);
 
-// //* === SESSION EDITOR ===
-// // Create new session
-// privateRouter.post("/sessions", SessionController.createSession);
+/* =========================
+*  SESSION
+========================= */
 
-// /*  Get all sessions ONLY when:
-//     - visibility = PUBLIC
-//     - (is_friend(creator) && visibility = FRIEND_ONLY)
-// */
-// privateRouter.get("/sessions", SessionController.getSessions);
+//* === SESSION MANAGEMENT ===
+// Create new session
+privateRouter.post("/sessions", SessionController.createSession);
 
-// /*  Valid ONLY when:
-//     - visibility = PUBLIC
-//     - (is_friend(creator) && visibility = FRIEND_ONLY)
-// */
-// privateRouter.get("/sessions/:sessionId", SessionController.getSessionDetail);
+/*  Get all sessions ONLY when:
+    - visibility = PUBLIC
+    - (is_friend(creator) && visibility = FRIEND_ONLY)
+*/
+privateRouter.get("/sessions", SessionController.getSessions);
 
-// /*  Edit session ONLY when:
-//     - status == PLANNED
-//         -> "status" = "CANCELLED"
-//         -> title, desc, time, image, data change
-//     - status == ONGOING 
-//         -> "status" = "FINISHED"
-// */
-// privateRouter.patch("/sessions/:sessionId", SessionController.updateSession);
+/*  Valid ONLY when:
+    - visibility = PUBLIC
+    - (is_friend(creator) && visibility = FRIEND_ONLY)
+*/
+privateRouter.get("/sessions/:sessionId", SessionController.getSessionDetail);
 
+/*  Edit session ONLY when:
+    - status == PLANNED
+        -> "status" = "CANCELLED"
+        -> title, desc, time, image, data change
+    - status == ONGOING 
+        -> "status" = "FINISHED"
+*/
+privateRouter.patch("/sessions/:sessionId", SessionController.updateSession);
 
-// //* === SESSION PARTICIPATION ===
-// /*  Join session, ONLY when:
-//     - The schedule doesn't conflict with user's other joined session
-//     - (Session status == PLANNED) || (Session status == ONGOING && Participant Status == LEFT)
-// */
-// privateRouter.post("/sessions/:sessionId/participants", ParticipantController.joinSession);
-
-// /*  Update progress on session, ONLY when:
-//     - session status == ONGOING && user status == JOINED
-//         -> leave
-//     - user status == LEFT
-//         -> user status JOINED
-// */
-// privateRouter.patch("/sessions/:sessionId/participants/status", ParticipantController.editParticipantStatus);
-
-// /*  Update progress on session, ONLY when:
-//     - session status == ONGOING && user status == JOINED
-//         -> Step increment
-// */
-// privateRouter.patch("/sessions/:sessionId/participants/step", ParticipantController.addStep);
+// Finish session, for syncronizing
+privateRouter.post("/sessions/:sessionId/finish", SessionController.finishSession);
 
 
-// /*  Session participants, when:
-//     - visibility == PUBLIC
-//     - visibility == FRIENDONLY && is_friend(creator)
-//     - visibility == INVITEONLY && participate_in(session)
-// */
-// privateRouter.get("/sessions/:sessionId/participants", ParticipantController.getParticipants);
+//* === SESSION PARTICIPATION ===
+/*  Join session, ONLY when:
+    - The schedule doesn't conflict with user's other joined session
+    - (Session status == PLANNED) || (Session status == ONGOING && Participant Status == LEFT)
+*/
+privateRouter.post("/sessions/:sessionId/participants", ParticipantController.joinSession);
 
-// // Get leaderboard, ONLY when participate_in(session) 
-// privateRouter.get("/sessions/:sessionId/leaderboard", LeaderboardController.getSessionLeaderboard);
+/*  Update progress on session, ONLY when:
+    - session status == ONGOING && user status == JOINED
+        -> leave
+    - user status == LEFT
+        -> user status JOINED
+*/
+privateRouter.patch("/sessions/:sessionId/participants/status", ParticipantController.editParticipantStatus);
+
+/*  Update progress on session, ONLY when:
+    - session status == ONGOING && user status == JOINED
+        -> Step increment
+*/
+privateRouter.patch("/sessions/:sessionId/participants/step", ParticipantController.addStep);
+
+/*  Session participants, when:
+    - visibility == PUBLIC
+    - visibility == FRIENDONLY && is_friend(creator)
+    - visibility == INVITEONLY && participate_in(session)
+*/
+privateRouter.get("/sessions/:sessionId/participants", ParticipantController.getParticipants);
+
+// Get leaderboard, ONLY when participate_in(session) 
+privateRouter.get("/sessions/:sessionId/leaderboard", LeaderboardController.getSessionLeaderboard);
 
 
-// //* === USER SESSION MANAGEMENT ===
-// // My sessions that I joined
-// privateRouter.get("/users/me/sessions", UserController.getMySessions);
+//* === USER SESSION MANAGEMENT ===
+// My sessions that I joined
+privateRouter.get("/users/me/sessions", UserController.getMySessions);
 
-// // Active session, returns ONLY 1 session or null
-// privateRouter.get("/users/me/sessions/active", UserController.getMyActiveSession);
+// Active session, returns ONLY 1 session or null
+privateRouter.get("/users/me/sessions/active", UserController.getMyActiveSession);
 
 
 /* =========================
-* ACHIEVEMENT DEFINITION (ADMIN/SYSTEM)
+* ACHIEVEMENT SYSTEM
 ========================= */
 privateRouter.get("/achievement", AchievementController.getAllAchievements);
-privateRouter.post("/achievement", AchievementController.createAchievement);
-privateRouter.put("/achievement/:achievementId", AchievementController.updateAchievement);
-privateRouter.delete("/achievement/:achievementId", AchievementController.deleteAchievement);
-
-/* =========================
-* USER ACHIEVEMENT PROGRESS
-========================= */
 privateRouter.get("/user_achievement", UserAchievementController.getAllUserAchievements);
 privateRouter.get("/user_achievement/:userAchievementListId", UserAchievementController.getUserAchievement);
-privateRouter.post("/user_achievement/:achievementId", UserAchievementController.createUserAchievement);
-privateRouter.put("/user_achievement/:userAchievementListId", UserAchievementController.updateUserAchievement);
-privateRouter.delete("/user_achievement/:userAchievementListId", UserAchievementController.deleteUserAchievement);
+
+/* =========================
+* SHOP & INVENTORY SYSTEM
+========================= */
+privateRouter.get("/shop_item", ShopItemController.getAllShopItems);
+privateRouter.get("/shop_item/:shopItemId", ShopItemController.getShopItem);
+privateRouter.get("/user_item", UserItemController.getAllUserItems);
+privateRouter.post("/user_item/:shopItemId", UserItemController.purchase);
+privateRouter.patch("/user_item/:userItemId/equip", UserItemController.equip);
+
+/* =========================
+* ADMIN ONLY (OPTIONAL)
+========================= */
+privateRouter.post("/achievement", AchievementController.createAchievement);
+privateRouter.post("/shop_item", ShopItemController.createShopItem);
 
 /* =========================
 * SHOP ITEM MANAGEMENT

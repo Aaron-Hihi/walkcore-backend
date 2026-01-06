@@ -1,5 +1,5 @@
 import { ResponseError } from "../../error/response-error"
-import { LoginUserRequest, RegisterUserRequest, toUserResponse, UserResponse, } from "../../models/user-model"
+import { LoginUserRequest, RegisterUserRequest, toUserResponse, UserResponse, } from "../../models/user/user-model"
 import { prismaClient } from "../../utils/database-util"
 import { UserValidation } from "../../validations/user/user-validation"
 import { Validation } from "../../validations/validation"
