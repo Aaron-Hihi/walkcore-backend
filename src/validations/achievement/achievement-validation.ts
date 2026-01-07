@@ -16,12 +16,13 @@ export class AchievementValidation {
       .string({ message: "Requirement type must be string!" })
       .refine(
         (val) =>
-          val === "STEP" ||
-          val === "SESSION" ||
-          val === "ACTIVE",
+          val === "TOTAL_STEPS" ||
+          val === "TOTAL_DISTANCE" ||
+          val === "TOTAL_CALORIES" ||
+          val === "TOTAL_SESSIONS" ||
+          val === "LONGEST_STREAK",
         { message: "Requirement type is invalid!" }
       ),
-
     requirementValue: z
       .number({ message: "Requirement value must be number!" })
       .int({ message: "Requirement value must be an integer!" })

@@ -24,8 +24,15 @@ export class ShopItemValidation {
     itemType: z
       .string({ message: "Item type must be string!" })
       .min(1, { message: "Item type can not be empty!" })
-      .refine((val) => val === "AVATAR" || val === "BANNER", {
-        message: "Item type is invalid!",
-      }),
+      .refine(
+        (val) =>
+          val === "AVATAR" ||
+          val === "FRAME" ||
+          val === "BACKGROUND" ||
+          val === "CONSUMABLE",
+        {
+          message: "Item type is invalid!",
+        }
+      ),
   });
 }
