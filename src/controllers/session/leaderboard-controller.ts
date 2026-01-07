@@ -10,14 +10,14 @@ export class LeaderboardController {
         try {
             const userId = BigInt(req.user!.id);
             const sessionId = BigInt(req.params.sessionId);
-
-            const result = await LeaderboardService.getLeaderboard(userId, sessionId);
+            
+            const response = await LeaderboardService.getLeaderboard(userId, sessionId);
 
             res.status(200).json({
-                data: result
+                data: response.leaderboard
             });
-        } catch (e) {
-            next(e);
+        } catch (error) {
+            next(error);
         }
     }
 }

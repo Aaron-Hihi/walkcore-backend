@@ -1,6 +1,3 @@
-/* =========================
-* ACTIVITY VALIDATION REVISION
-========================= */
 import { z, ZodType } from "zod";
 
 const dateStringSchema = z
@@ -10,30 +7,33 @@ const dateStringSchema = z
     .regex(/^\d{4}-\d{2}-\d{2}$/, {
         message: "Date must be in YYYY-MM-DD format."
     })
-    .pipe(z.coerce.date({
-        error: "Date provided is not a valid calendar date."
-    }));
+    .transform((val) => {
+        const date = new Date(val);
+        if (isNaN(date.getTime())) {
+            throw new Error("Invalid calendar date.");
+        }
+        return date;
+    });
 
 export class ActivityValidation {
     static readonly GET_SINGLE_DATE: ZodType = z.object({
         date: dateStringSchema
-            .describe("The target date for activity lookup (YYYY-MM-DD).")
     });
 
     static readonly GET_DATE_RANGE: ZodType = z.object({
-        from: dateStringSchema
-            .describe("The start date of the activity range (YYYY-MM-DD)."),
-        
-        to: dateStringSchema
-            .describe("The end date of the activity range (YYYY-MM-DD)."),
+        from: dateStringSchema,
+        to: dateStringSchema,
     })
     .refine(
-        (data) => {
-            return data.from.getTime() <= data.to.getTime();
-        },
+        (data) => data.from.getTime() <= data.to.getTime(),
         {
             message: "Start date ('from') cannot be after end date ('to').",
             path: ["from"],
         }
     );
+
+    static readonly SYNC: ZodType = z.object({
+        steps: z.number().min(0),
+        date: z.string().optional().default(() => new Date().toISOString().split('T')[0]).pipe(dateStringSchema)
+    });
 }

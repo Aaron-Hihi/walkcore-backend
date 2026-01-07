@@ -1,84 +1,57 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import { UserRequest } from "../../models/user/user-request-model";
-import { ResponseError } from "../../error/response-error";
 import { userDailyActivityService } from "../../services/user/user-daily-activity";
 import { ActivityValidation } from "../../validations/user/activity-validation";
 import { Validation } from "../../validations/validation";
 
+// Controller for handling daily user activities
 export class ActivityController {
 
-    //* === Get user daily activity
+    // Get activity for a specific date
     static async getActivityOn(req: UserRequest, res: Response, next: NextFunction) {
         try {
-            const currentUserId = BigInt(req.user!.id);
-            const validatedActivity = Validation.validate(
-                ActivityValidation.GET_SINGLE_DATE,
-                req.query
-            );
-
-            const targetDate = new Date(validatedActivity.date as string);
-            targetDate.setUTCHours(0, 0, 0, 0);
-
-            const activity = await userDailyActivityService.getActivityOn(
-                currentUserId,
-                targetDate
-            );
-
-            res.status(200).json({ data: activity });
-
-        } catch (error) {
-            next(error);
-        }
+            const val = Validation.validate(ActivityValidation.GET_SINGLE_DATE, req.query);
+            const date = new Date(val.date as unknown as Date);
+            date.setUTCHours(0, 0, 0, 0);
+            const result = await userDailyActivityService.getActivityOn(BigInt(req.user!.id), date);
+            res.status(200).json({ data: result });
+        } catch (e) { next(e); }
     }
 
-
-    // Get all activities on date range
+    // Get activities within a date range
     static async getActivityOnRange(req: UserRequest, res: Response, next: NextFunction) {
         try {
-            const currentUserId = BigInt(req.user!.id);
-            
-            // Validation
-            const validatedActivityRange = Validation.validate(
-                ActivityValidation.GET_DATE_RANGE,
-                req.query
-            );
-            
-            const startDate = new Date(validatedActivityRange.from as string);
-            startDate.setUTCHours(0, 0, 0, 0);
-            
-            const endDate = new Date(validatedActivityRange.to as string);
-            endDate.setUTCHours(23, 59, 59, 999);
-
-            const activities = await userDailyActivityService.getActivitiesRange(
-                currentUserId,
-                startDate,
-                endDate
-            );
-
-            res.status(200).json({ data: activities });
-
-        } catch (error) {
-            next(error);
-        }
+            const val = Validation.validate(ActivityValidation.GET_DATE_RANGE, req.query);
+            const start = new Date(val.from as unknown as Date);
+            const end = new Date(val.to as unknown as Date);
+            start.setUTCHours(0, 0, 0, 0);
+            end.setUTCHours(23, 59, 59, 999);
+            const result = await userDailyActivityService.getActivitiesRange(BigInt(req.user!.id), start, end);
+            res.status(200).json({ data: result });
+        } catch (e) { next(e); }
     }
 
+    // Sync steps and return data
     static async syncSteps(req: UserRequest, res: Response, next: NextFunction) {
         try {
-            const steps = req.body.steps;
-            if (typeof steps !== 'number' || steps < 0) {
-                res.status(400).json({ errors: "Steps must be a positive number" });
-                return;
-            }
-
-            const result = await userDailyActivityService.syncSteps(req.user!, steps);
+            const val = Validation.validate(ActivityValidation.SYNC, req.body);
+            const result = await userDailyActivityService.syncSteps(
+                req.user!, 
+                val.steps, 
+                val.date as unknown as Date,
+                req.body.calories
+            );
             
-            res.status(200).json({
-                message: "Steps synchronized successfully",
+            return res.status(200).json({
                 data: {
-                    date: result.date,
-                    todayTotalSteps: result.stepsWalked
+                    stepsWalked: result ? Number(result.stepsWalked) : 0,
+                    todayTotalSteps: result ? Number(result.stepsWalked) : 0,
+                    caloriesBurned: result ? Number(result.caloriesBurned) : 0,
+                    distance: result ? Number(result.distance) : 0,
+                    date: result?.date
                 }
             });
+            
         } catch (e) {
             next(e);
         }

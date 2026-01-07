@@ -57,13 +57,16 @@ export class SessionController {
     /* =========================
     * SESSION COMPLETION
     ========================= */
-    static async finishSession(req: Request, res: Response, next: NextFunction) {
+    static async finishSession(req: UserRequest, res: Response, next: NextFunction) {
         try {
             const sessionId = BigInt(req.params.sessionId);
-            const result = await SessionService.finishSessionAndDistributeRewards(sessionId);
-
+            const userId = BigInt(req.user!.id);
+            
+            const result = await SessionService.finish(userId, sessionId);
+            
             res.status(200).json({
-                message: result
+                message: "Session finished successfully",
+                data: result
             });
         } catch (e) {
             next(e);
