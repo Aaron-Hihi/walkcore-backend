@@ -4,7 +4,7 @@ import { ResponseError } from "../../error/response-error";
 import { Validation } from "../../validations/validation";
 import { AchievementValidation } from "../../validations/achievement/achievement-validation";
 import { AchievementCreateUpdateRequest, AchievementResponse, toAchievementResponse, toAchievementResponseList } from "../../models/achievement/achievement-model";
-import { Achievement } from "../../../generated/prisma/client";
+import { Achievement, RequirementType } from "../../../generated/prisma/client";
 
 export class AchievementService {
   static async getAllAchievement(): Promise<AchievementResponse[]> {
@@ -84,4 +84,33 @@ export class AchievementService {
 
     return "The achievement has been deleted successfully";
   }
+
+  static async checkAndUnlock(userId: bigint, type: RequirementType, currentValue: number, tx: any = prismaClient) {
+        const pendingAchievements = await tx.achievement.findMany({
+            where: {
+                requirementType: type,
+                requirementValue: { lte: currentValue },
+                users: { none: { userId: userId, isCompleted: true } }
+            }
+        });
+
+        for (const ach of pendingAchievements) {
+            // Atomic transaction to create record and award currency
+            await tx.userAchievement.upsert({
+                where: { userId_achievementId: { userId, achievementId: ach.id } },
+                create: { 
+                    userId, 
+                    achievementId: ach.id, 
+                    isCompleted: true, 
+                    earnedAt: new Date() 
+                },
+                update: { isCompleted: true }
+            });
+
+            await tx.user.update({
+                where: { id: userId },
+                data: { currency: { increment: ach.reward } }
+            });
+        }
+    }
 }

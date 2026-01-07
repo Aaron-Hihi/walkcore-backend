@@ -139,24 +139,45 @@ export class UserAchievementService {
         return userAchievement;
     }
 
-    static async checkAndUnlock(userId: bigint, type: RequirementType, currentValue: number): Promise<void> {
-        const potentialAchievements = await prismaClient.achievement.findMany({
+    static async checkAndUnlock(userId: bigint, type: RequirementType, currentValue: number, tx: any = prismaClient) {
+        // Find all achievements that meet the requirement but are not completed by the user
+        const eligibleAchievements = await tx.achievement.findMany({
             where: {
                 requirementType: type,
-                requirementValue: { lte: currentValue },
-                userAchievements: {
-                    none: { userId }
-                }
+                requirementValue: { lte: currentValue }
             }
         });
 
-        if (potentialAchievements.length > 0) {
-            await prismaClient.userAchievement.createMany({
-                data: potentialAchievements.map(achievement => ({
-                    userId,
-                    achievementId: achievement.id
-                }))
+        for (const ach of eligibleAchievements) {
+            // Check if user already completed this specific achievement
+            const alreadyDone = await tx.userAchievement.findFirst({
+                where: { userId, achievementId: ach.id, isCompleted: true }
             });
+
+            if (!alreadyDone) {
+                // Mark as completed and reward the user
+                await tx.userAchievement.upsert({
+                    where: { userId_achievementId: { userId, achievementId: ach.id } },
+                    create: { 
+                        userId, 
+                        achievementId: ach.id, 
+                        isCompleted: true, 
+                        completedAt: new Date(),
+                        progress: currentValue 
+                    },
+                    update: { 
+                        isCompleted: true, 
+                        completedAt: new Date(),
+                        progress: currentValue
+                    }
+                });
+
+                // Add currency reward to user balance
+                await tx.user.update({
+                    where: { id: userId },
+                    data: { currency: { increment: ach.reward } }
+                });
+            }
         }
     }
 }

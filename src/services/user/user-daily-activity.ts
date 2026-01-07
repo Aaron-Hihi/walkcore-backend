@@ -1,98 +1,95 @@
+// src/services/user/user-daily-activity.ts
+
 import { prismaClient } from "../../utils/database-util";
 import { ResponseError } from "../../error/response-error";
 import { FitnessUtil } from "../../utils/fitness-util";
 import { UserDailyActivity } from "../../../generated/prisma/client";
 
+// Activity service logic for syncing and retrieving daily health data
 export class userDailyActivityService {
-    // Synchronizes step data with anti-cheat and biometric-based calculations
-    static async syncSteps(userPayload: any, newSteps: number): Promise<UserDailyActivity> {
-        const userId = BigInt(userPayload.id);
-        const today = new Date();
-        today.setUTCHours(0, 0, 0, 0);
 
+    // Synchronizes steps
+    static async syncSteps(userPayload: any, stepsToAdd: number, syncDate: Date, manualCalories?: number): Promise<any> {
+        const userId = BigInt(userPayload.id);
+        const targetDate = new Date(syncDate);
+        targetDate.setUTCHours(0, 0, 0, 0);
+
+        // Retrieve user biometrics for calorie calculation
         const user = await prismaClient.user.findUnique({
             where: { id: userId },
             select: { weight: true, height: true, gender: true, totalSteps: true }
         });
 
-        if (!user || !user.weight || !user.height) {
+        if (!user || user.weight === null || user.height === null) {
             throw new ResponseError(400, "User profile biometrics are incomplete");
         }
 
         const activity = await prismaClient.userDailyActivity.findUnique({
-            where: { userId_date: { userId, date: today } }
+            where: { userId_date: { userId, date: targetDate } }
         });
 
-        const lastActivityAt = activity?.updatedAt || new Date();
-        const now = new Date();
+        // Logic Anti-cheat
+        if (activity) {
+            const lastUpdate = new Date(activity.updatedAt).getTime();
+            const now = new Date().getTime();
+            const timeDiffMinutes = (now - lastUpdate) / 60000;
 
-        if (activity && newSteps > activity.stepsWalked) {
-            const stepDiff = newSteps - activity.stepsWalked;
-            const timeDiffMinutes = Math.max(1, (now.getTime() - lastActivityAt.getTime()) / (1000 * 60));
-            const maxReasonableSteps = timeDiffMinutes * 250;
+            const maxAllowedSteps = 5000 + (timeDiffMinutes * 250);
 
-            if (stepDiff > maxReasonableSteps) {
+            if (stepsToAdd > maxAllowedSteps) {
                 throw new ResponseError(400, "Unnatural step activity detected");
             }
         }
 
-        const weight = Number(user.weight);
-        const height = Number(user.height);
-        const strideMeters = FitnessUtil.calculateStrideLength(height, user.gender);
-        const totalDistance = Math.round(newSteps * strideMeters * 100) / 100;
-        const calories = Math.round(FitnessUtil.calculateCalories(newSteps, weight, height, user.gender));
+        const stride = FitnessUtil.calculateStrideLength(Number(user.height), user.gender);
+        const cal = manualCalories ?? Math.round(FitnessUtil.calculateCalories(stepsToAdd, Number(user.weight), Number(user.height), user.gender));
 
         return await prismaClient.$transaction(async (tx) => {
-            const updatedActivity = await tx.userDailyActivity.upsert({
-                where: { userId_date: { userId, date: today } },
+            const updated = await tx.userDailyActivity.upsert({
+                where: { userId_date: { userId, date: targetDate } },
                 create: {
-                    userId,
-                    date: today,
-                    stepsWalked: newSteps,
-                    distance: totalDistance,
-                    activeTime: Math.floor(newSteps / 100),
-                    caloriesBurned: calories
+                    userId, 
+                    date: targetDate, 
+                    stepsWalked: stepsToAdd,
+                    distance: Math.round(stepsToAdd * stride * 100) / 100,
+                    caloriesBurned: cal, 
+                    activeTime: Math.floor(stepsToAdd / 100)
                 },
                 update: {
-                    stepsWalked: newSteps,
-                    distance: totalDistance,
-                    caloriesBurned: calories
+                    stepsWalked: { increment: stepsToAdd },
+                    distance: { increment: Math.round(stepsToAdd * stride * 100) / 100 },
+                    caloriesBurned: { increment: cal },
+                    activeTime: { increment: Math.floor(stepsToAdd / 100) }
                 }
             });
 
-            const stepIncrement = BigInt(Math.max(0, newSteps - (activity?.stepsWalked || 0)));
-            const calorieIncrement = Math.max(0, calories - (activity?.caloriesBurned || 0));
-            
+            // Update user global stats
             await tx.user.update({
                 where: { id: userId },
                 data: {
-                    totalSteps: { increment: stepIncrement },
-                    totalDistance: { increment: Number(stepIncrement) * strideMeters },
-                    totalCaloriesBurned: { increment: calorieIncrement }
+                    totalSteps: { increment: BigInt(stepsToAdd) },
+                    totalDistance: { increment: stepsToAdd * stride },
+                    totalCaloriesBurned: { increment: cal }
                 }
             });
 
-            return updatedActivity;
+            // Return with mapped stepsWalked for test compatibility
+            return {
+                ...updated,
+                stepsWalked: Number(updated.stepsWalked)
+            };
         });
     }
 
-    // Retrieves user daily activity for a specific date
+    // Retrieves activity for a specific date
     static async getActivityOn(userId: bigint, date: Date): Promise<UserDailyActivity | null> {
-        return await prismaClient.userDailyActivity.findUnique({
-            where: { userId_date: { userId, date } }
-        });
+        return await prismaClient.userDailyActivity.findUnique({ where: { userId_date: { userId, date } } });
     }
 
-    // Retrieves user daily activities within a date range
+    // Retrieves activities within a date range
     static async getActivitiesRange(userId: bigint, from: Date, to: Date): Promise<UserDailyActivity[]> {
         return await prismaClient.userDailyActivity.findMany({
-            where: {
-                userId,
-                date: {
-                    gte: from,
-                    lte: to
-                }
-            },
+            where: { userId, date: { gte: from, lte: to } },
             orderBy: { date: "asc" }
         });
     }

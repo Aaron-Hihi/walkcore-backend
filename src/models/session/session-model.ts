@@ -51,9 +51,9 @@ export interface UpdateSessionRequest {
 export function toSessionResponse(session: Session): SessionResponse {
     return {
         id: session.id.toString(),
-        creatorId: session.creatorId.toString(),
         title: session.title,
         description: session.description,
+        creatorId: session.creatorId.toString(),
         mode: session.mode,
         status: session.status,
         visibility: session.visibility,

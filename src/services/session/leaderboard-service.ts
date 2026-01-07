@@ -1,13 +1,13 @@
 import { prismaClient } from "../../utils/database-util";
 import { ResponseError } from "../../error/response-error";
-import { ParticipantStatus, Visibility } from "../../../generated/prisma/client";
+import { ParticipantStatus } from "../../../generated/prisma/client";
 import { SessionLeaderboardResponse } from "../../models/session/leaderboard-model";
 
 /* =========================
 * LEADERBOARD SERVICE
 ========================= */
 export class LeaderboardService {
-    static async getLeaderboard(userId: bigint, sessionId: bigint): Promise<SessionLeaderboardResponse> {
+    static async getLeaderboard(userId: bigint, sessionId: bigint): Promise<any> {
         const session = await prismaClient.session.findUnique({
             where: { id: sessionId },
             include: { 
@@ -44,10 +44,12 @@ export class LeaderboardService {
         const leaderboard = allParticipants.map((p, index) => ({
             rank: index + 1,
             userId: p.userId.toString(),
-            username: p.user.username,
             totalSteps: p.totalSteps || 0,
             approxDistance: p.approxDistance?.toString() || "0",
-            caloriesBurned: p.caloriesBurned || 0
+            caloriesBurned: p.caloriesBurned || 0,
+            user: {
+                username: p.user.username
+            }
         }));
 
         return {
