@@ -171,6 +171,10 @@ privateRouter.get("/users/me/sessions/active", UserController.getMyActiveSession
 privateRouter.get("/achievement", AchievementController.getAllAchievements);
 privateRouter.get("/user_achievement", UserAchievementController.getAllUserAchievements);
 privateRouter.get("/user_achievement/:userAchievementListId", UserAchievementController.getUserAchievement);
+privateRouter.post("/user_achievement/:achievementId", UserAchievementController.createUserAchievement);
+privateRouter.get("/achievement/:achievementId", AchievementController.getAchievement);
+privateRouter.put("/achievement/:achievementId", AchievementController.updateAchievement);
+privateRouter.put("/user_achievement/:userAchievementListId", UserAchievementController.updateUserAchievement);
 
 /* =========================
 * SHOP & INVENTORY SYSTEM
@@ -186,6 +190,8 @@ privateRouter.patch("/user_item/:userItemId/equip", UserItemController.equip);
 ========================= */
 privateRouter.post("/achievement", AchievementController.createAchievement);
 privateRouter.post("/shop_item", ShopItemController.createShopItem);
+privateRouter.delete("/achievement/:achievementId", AchievementController.deleteAchievement);
+privateRouter.delete("/user_achievement/:userAchievementListId", UserAchievementController.deleteUserAchievement);
 
 /* =========================
 * SHOP ITEM MANAGEMENT
